@@ -33,7 +33,7 @@ class MujocoSimNode(Node):
         self.arm_ctrl_joint_states = None
         self.wb_fdbk_joint_states = JointState()
         self.wb_joint_names = [
-            mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, i)
+            mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_JOINT, i)
             for i in range(self.model.nu)
         ]
         self.wb_fdbk_joint_states.name = self.wb_joint_names
