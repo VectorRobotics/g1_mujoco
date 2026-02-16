@@ -13,12 +13,18 @@ class MujocoSimNode(Node):
     def __init__(self):
         super().__init__('mujoco_joint_state_subscriber')
 
-        ## ROS interfaces
-        if config.TEST_MODE == "Impedance Control":
-            self.joint_sub = self.create_subscription(JointState, 'controller/joint_states', self.listener_callback, 10)
+        ## ROS interfaces — topic depends on test mode
+        sub_topics = {
+            "IK": "joint_states",
+            "Impedance Control": "controller/joint_states",
+            "Visual Servo": "servo/joint_states",
+        }
+        self.joint_sub = self.create_subscription(
+            JointState, sub_topics[config.TEST_MODE], self.listener_callback, 10)
+
+        # Feedback publisher (needed by Impedance Control and Visual Servo)
+        if config.TEST_MODE in ("Impedance Control", "Visual Servo"):
             self.joint_pub = self.create_publisher(JointState, "feedback", 10)
-        elif config.TEST_MODE == "IK":
-            self.joint_sub = self.create_subscription(JointState, 'joint_states', self.listener_callback, 10)
 
         ## MuJoCo model and data
         self.model = mujoco.MjModel.from_xml_path(config.ROBOT_SCENE)
@@ -66,17 +72,17 @@ class MujocoSimNode(Node):
             # Sub-step: control + physics at every timestep
             for _ in range(n_steps):
                 if self.arm_ctrl_joint_states is not None:
-                    if config.TEST_MODE == "Impedance Control":
+                    if config.TEST_MODE in ("Impedance Control", "Visual Servo"):
                         self.apply_torques(self.arm_ctrl_joint_states)
                     elif config.TEST_MODE == "IK":
                         self.control_arm(self.arm_ctrl_joint_states)
                 mujoco.mj_step(self.model, self.data)
 
             # Publish feedback (once per frame, after sub-steps)
-            self.wb_fdbk_joint_states.position = self.data.sensordata[:self.model.nu].tolist()
-            self.wb_fdbk_joint_states.velocity = self.data.sensordata[self.model.nu:2*self.model.nu].tolist()
-            self.joint_pub.publish(self.wb_fdbk_joint_states)
-            # self.get_logger().info(f"t={self.data.time:.3f}s: published {len(self.wb_fdbk_joint_states.name)} joint states")
+            if hasattr(self, 'joint_pub'):
+                self.wb_fdbk_joint_states.position = self.data.sensordata[:self.model.nu].tolist()
+                self.wb_fdbk_joint_states.velocity = self.data.sensordata[self.model.nu:2*self.model.nu].tolist()
+                self.joint_pub.publish(self.wb_fdbk_joint_states)
 
             # Sync viewer (once per frame)
             self.viewer.sync()
