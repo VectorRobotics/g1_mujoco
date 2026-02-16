@@ -30,25 +30,23 @@ class MujocoSimNode(Node):
         self.arm_kp = 10
         self.arm_kd = 2
 
-        self.exp_joint_states = None
-        self.feedback_joint_indices = None  # Built on first controller message
+        self.arm_ctrl_joint_states = None
+        self.wb_fdbk_joint_states = JointState()
+        self.wb_joint_names = [
+            mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, i)
+            for i in range(self.model.nu)
+        ]
+        self.wb_fdbk_joint_states.name = self.wb_joint_names
 
         # Single thread for physics + viewer (mjData is NOT thread-safe)
         self.sim_thread = threading.Thread(target=self._sim_loop, daemon=True)
         self.sim_thread.start()
 
         self.get_logger().info("Mujoco simulation node has started.")
+        self.PrintSceneInformation()
 
     def listener_callback(self, msg: JointState):
-        # On first message, build the name→sensor index mapping
-        if self.feedback_joint_indices is None:
-            self.feedback_joint_indices = []
-            for name in msg.name:
-                idx = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, name)
-                self.feedback_joint_indices.append(idx)
-            self.feedback_joint_names = list(msg.name)
-            self.get_logger().info(f"Feedback joints locked: {self.feedback_joint_names}")
-        self.exp_joint_states = msg
+        self.arm_ctrl_joint_states = msg
 
     def _sim_loop(self):
         """Single-thread loop: sub-step physics with control at every step,
@@ -59,31 +57,33 @@ class MujocoSimNode(Node):
         stability regardless of VIEWER_DT.
         """
 
+        self.model.opt.timestep = config.SIMULATE_DT
+        n_steps = max(1, int(config.VIEWER_DT / self.model.opt.timestep))
+
         while self.viewer.is_running():
             frame_start = time.perf_counter()
 
             # Sub-step: control + physics at every timestep
-            if self.exp_joint_states is not None:
-                if config.TEST_MODE == "Impedance Control":
-                    self.apply_torques(self.exp_joint_states)
+            for _ in range(n_steps):
+                if self.arm_ctrl_joint_states is not None:
+                    if config.TEST_MODE == "Impedance Control":
+                        self.apply_torques(self.arm_ctrl_joint_states)
+                    elif config.TEST_MODE == "IK":
+                        self.control_arm(self.arm_ctrl_joint_states)
+                mujoco.mj_step(self.model, self.data)
 
-                    # Publish feedback: only controller joints, same order
-                    joint_state = JointState()
-                    joint_state.name = self.feedback_joint_names
-                    joint_state.position = [float(self.data.sensordata[idx]) for idx in self.feedback_joint_indices]
-                    joint_state.velocity = [float(self.data.sensordata[idx + self.model.nu]) for idx in self.feedback_joint_indices]
-                    self.joint_pub.publish(joint_state)
+            # Publish feedback (once per frame, after sub-steps)
+            self.wb_fdbk_joint_states.position = self.data.sensordata[:self.model.nu].tolist()
+            self.wb_fdbk_joint_states.velocity = self.data.sensordata[self.model.nu:2*self.model.nu].tolist()
+            self.joint_pub.publish(self.wb_fdbk_joint_states)
+            # self.get_logger().info(f"t={self.data.time:.3f}s: published {len(self.wb_fdbk_joint_states.name)} joint states")
 
-                elif config.TEST_MODE == "IK":
-                    self.control_arm(self.exp_joint_states)
-            mujoco.mj_step(self.model, self.data)
-
-            # Sync viewer (once per frame, after all sub-steps)
+            # Sync viewer (once per frame)
             self.viewer.sync()
 
             # Sleep to maintain real-time
             elapsed = time.perf_counter() - frame_start
-            sleep_time = config.SIMULATE_DT - elapsed
+            sleep_time = config.VIEWER_DT - elapsed
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
@@ -112,6 +112,50 @@ class MujocoSimNode(Node):
                 print(f"Warning: Joint '{joint_name}' not found in Mujoco model.")
             except Exception as e:
                 print(f"Error setting motor command for {joint_name}: {e}")
+
+    def PrintSceneInformation(self):
+        print(" ")
+
+        print("<<------------- Link ------------->> ")
+        for i in range(self.model.nbody):
+            name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_BODY, i)
+            if name:
+                print("link_index:", i, ", name:", name)
+        print(" ")
+
+        print("<<------------- Joint ------------->> ")
+        for i in range(self.model.njnt):
+            name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_JOINT, i)
+            if name:
+                print("joint_index:", i, ", name:", name)
+        print(" ")
+
+        print("<<------------- Actuator ------------->>")
+        for i in range(self.model.nu):
+            name = mujoco.mj_id2name(
+                self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, i
+            )
+            if name:
+                print("actuator_index:", i, ", name:", name)
+        print(" ")
+
+        print("<<------------- Sensor ------------->>")
+        index = 0
+        for i in range(self.model.nsensor):
+            name = mujoco.mj_id2name(
+                self.model, mujoco.mjtObj.mjOBJ_SENSOR, i
+            )
+            if name:
+                print(
+                    "sensor_index:",
+                    index,
+                    ", name:",
+                    name,
+                    ", dim:",
+                    self.model.sensor_dim[i],
+                )
+            index = index + self.model.sensor_dim[i]
+        print(" ")
 
 
 def main():

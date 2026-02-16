@@ -14,8 +14,8 @@ JOYSTICK_DEVICE = 0 # Joystick number
 PRINT_SCENE_INFORMATION = True # Print link, joint and sensors information of robot
 ENABLE_ELASTIC_BAND = False # Virtual spring band, used for lifting h1
 
-SIMULATE_DT = 0.005  # Physics timestep (small for stability)
-# VIEWER_DT = 1.0/30.0  # ~60 fps for viewer
+SIMULATE_DT = 1/200  # Physics timestep (small for stability) 0.005s
+VIEWER_DT = 1.0/25.0  # ~25 fps for viewer 0.04s
 
 # test mode: IK, Impedance Control, 
 TEST_MODE = "Impedance Control"
