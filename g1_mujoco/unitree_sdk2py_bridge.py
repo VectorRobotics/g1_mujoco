@@ -14,7 +14,7 @@ from unitree_sdk2py.utils.thread import RecurrentThread
 
 from sensor_msgs.msg import JointState
 
-import config
+from . import config
 if config.ROBOT.startswith("g1"):
     from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowCmd_
     from unitree_sdk2py.idl.unitree_hg.msg.dds_ import LowState_
@@ -41,16 +41,12 @@ class UnitreeSdk2Bridge:
 
         self.num_motor = self.mj_model.nu
         self.dim_motor_sensor = MOTOR_SENSOR_NUM * self.num_motor
-        self.have_imu = False
-        self.have_frame_sensor = False
+        self.have_imu_ = False
+        self.have_frame_sensor_ = False
         self.dt = self.mj_model.opt.timestep
         self.idl_type = (self.num_motor > NUM_MOTOR_IDL_GO) # 0: unitree_go, 1: unitree_hg
 
         self.joystick = None
-
-        # TODO: PD Controller
-        self.arm_kp = 10
-        self.arm_kd = 10
 
         # Check sensor
         for i in range(self.dim_motor_sensor, self.mj_model.nsensor):
