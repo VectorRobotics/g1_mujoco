@@ -15,7 +15,7 @@ class MujocoSimNode(Node):
 
         ## ROS interfaces — topic depends on test mode
         sub_topics = {
-            "IK": "joint_states",
+            "IK": "ik/joint_states",
             "Impedance Control": "controller/joint_states",
             "Visual Servo": "servo/joint_states",
         }
@@ -23,7 +23,7 @@ class MujocoSimNode(Node):
             JointState, sub_topics[config.TEST_MODE], self.listener_callback, 10)
 
         # Feedback publisher (needed by Impedance Control and Visual Servo)
-        if config.TEST_MODE in ("Impedance Control", "Visual Servo"):
+        if config.TEST_MODE in ("Impedance Control", "Visual Servo", "IK"):
             self.joint_pub = self.create_publisher(JointState, "feedback", 10)
 
         ## MuJoCo model and data
@@ -40,9 +40,32 @@ class MujocoSimNode(Node):
         self.wb_fdbk_joint_states = JointState()
         self.wb_joint_names = [
             mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_JOINT, i)
-            for i in range(self.model.nu)
+            for i in range(self.model.njnt)
         ]
         self.wb_fdbk_joint_states.name = self.wb_joint_names
+
+        # Build joint-name → actuator-id mapping for robust ctrl[] indexing
+        self._joint_to_actuator = {}
+        for act_id in range(self.model.nu):
+            jnt_id = self.model.actuator_trnid[act_id][0]
+            jnt_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_JOINT, jnt_id)
+            if jnt_name:
+                self._joint_to_actuator[jnt_name] = act_id
+
+        # Build joint-name → sensor-offset mappings for feedback
+        self._joint_pos_sensor = {}
+        self._joint_vel_sensor = {}
+        sensor_offset = 0
+        for s_id in range(self.model.nsensor):
+            s_name = mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_SENSOR, s_id)
+            s_dim = self.model.sensor_dim[s_id]
+            if s_name and s_name.endswith("_pos"):
+                jnt_name = s_name.replace("_pos", "_joint")
+                self._joint_pos_sensor[jnt_name] = sensor_offset
+            elif s_name and s_name.endswith("_vel"):
+                jnt_name = s_name.replace("_vel", "_joint")
+                self._joint_vel_sensor[jnt_name] = sensor_offset
+            sensor_offset += s_dim
 
         # Single thread for physics + viewer (mjData is NOT thread-safe)
         self.sim_thread = threading.Thread(target=self._sim_loop, daemon=True)
@@ -79,10 +102,16 @@ class MujocoSimNode(Node):
                 mujoco.mj_step(self.model, self.data)
 
             # Publish feedback (once per frame, after sub-steps)
-            if hasattr(self, 'joint_pub'):
-                self.wb_fdbk_joint_states.position = self.data.sensordata[:self.model.nu].tolist()
-                self.wb_fdbk_joint_states.velocity = self.data.sensordata[self.model.nu:2*self.model.nu].tolist()
-                self.joint_pub.publish(self.wb_fdbk_joint_states)
+            positions = []
+            velocities = []
+            for jname in self.wb_joint_names:
+                pos_idx = self._joint_pos_sensor.get(jname)
+                vel_idx = self._joint_vel_sensor.get(jname)
+                positions.append(float(self.data.sensordata[pos_idx]) if pos_idx is not None else 0.0)
+                velocities.append(float(self.data.sensordata[vel_idx]) if vel_idx is not None else 0.0)
+            self.wb_fdbk_joint_states.position = positions
+            self.wb_fdbk_joint_states.velocity = velocities
+            self.joint_pub.publish(self.wb_fdbk_joint_states)
 
             # Sync viewer (once per frame)
             self.viewer.sync()
@@ -99,25 +128,22 @@ class MujocoSimNode(Node):
     def apply_torques(self, msg: JointState):
         """Impedance Control mode: directly apply torques from the controller."""
         for i, joint_name in enumerate(msg.name):
-            try:
-                motor_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
-                self.data.ctrl[motor_id] = msg.effort[i]
-            except Exception as e:
-                print(f"Error setting torque for {joint_name}: {e}")
+            act_id = self._joint_to_actuator.get(joint_name, -1)
+            if act_id >= 0:
+                self.data.ctrl[act_id] = msg.effort[i]
 
     def control_arm(self, msg: JointState):
+        """IK mode: effort feedforward + PD position/velocity tracking."""
         for i, joint_name in enumerate(msg.name):
-            try:
-                motor_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
-                self.data.ctrl[motor_id] = (
-                    msg.effort[i] +
-                    self.arm_kp * (msg.position[i] - self.data.sensordata[motor_id])
-                    + self.arm_kd * (msg.velocity[i] - self.data.sensordata[motor_id + self.model.nu])
+            act_id = self._joint_to_actuator.get(joint_name, -1)
+            pos_idx = self._joint_pos_sensor.get(joint_name)
+            vel_idx = self._joint_vel_sensor.get(joint_name)
+            if act_id >= 0 and pos_idx is not None and vel_idx is not None:
+                self.data.ctrl[act_id] = (
+                    msg.effort[i]
+                    + self.arm_kp * (msg.position[i] - self.data.sensordata[pos_idx])
+                    + self.arm_kd * (msg.velocity[i] - self.data.sensordata[vel_idx])
                 )
-            except KeyError:
-                print(f"Warning: Joint '{joint_name}' not found in Mujoco model.")
-            except Exception as e:
-                print(f"Error setting motor command for {joint_name}: {e}")
 
     def PrintSceneInformation(self):
         print(" ")
