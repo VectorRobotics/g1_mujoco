@@ -24,9 +24,8 @@ MODE_ENV = {
 def generate_launch_description():
     mode_arg = DeclareLaunchArgument(
         'mode',
-        default_value='impedance',
         choices=list(CONTROLLER_NODES.keys()),
-        description='Test mode: impedance, visual_servo, or ik'
+        description='Test mode: impedance, visual_servo, or ik (REQUIRED)'
     )
 
     # Resolve venv Python
