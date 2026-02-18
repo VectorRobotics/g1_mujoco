@@ -16,7 +16,7 @@ class MujocoSimNode(Node):
         ## ROS interfaces — topic depends on test mode
         sub_topics = {
             "IK": "ik/joint_states",
-            "Impedance Control": "controller/joint_states",
+            "Impedance Control": "effort/joint_states",
             "Visual Servo": "servo/joint_states",
         }
         self.joint_sub = self.create_subscription(JointState, sub_topics[config.TEST_MODE], self.listener_callback, 10)
@@ -79,6 +79,7 @@ class MujocoSimNode(Node):
             # Publish feedback (once per frame, after sub-steps)
             self.wb_fdbk_joint_states.position = self.data.qpos[:self.model.njnt].tolist()
             self.wb_fdbk_joint_states.velocity = self.data.qvel[:self.model.njnt].tolist()
+            self.wb_fdbk_joint_states.effort = self.data.actuator_force[:self.model.njnt].tolist()
             self.joint_pub.publish(self.wb_fdbk_joint_states)
 
             # Sync viewer (once per frame)
