@@ -15,9 +15,9 @@ CONTROLLER_NODES = {
 
 # Map mode argument to G1_TEST_MODE env var value
 MODE_ENV = {
-    'impedance': 'Impedance Control',
-    'visual_servo': 'Visual Servo',
-    'ik': 'IK',
+    'impedance': 'effort',
+    'visual_servo': 'effort',
+    'ik': 'position',
 }
 
 

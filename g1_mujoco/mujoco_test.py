@@ -15,9 +15,8 @@ class MujocoSimNode(Node):
 
         ## ROS interfaces — topic depends on test mode
         sub_topics = {
-            "IK": "ik/joint_states",
-            "Impedance Control": "effort/joint_states",
-            "Visual Servo": "servo/joint_states",
+            "position": "position_control",
+            "effort": "effort_control",
         }
         self.joint_sub = self.create_subscription(JointState, sub_topics[config.TEST_MODE], self.listener_callback, 10)
 
@@ -70,9 +69,9 @@ class MujocoSimNode(Node):
             # Sub-step: control + physics at every timestep
             for _ in range(n_steps):
                 if self.arm_ctrl_joint_states is not None:
-                    if config.TEST_MODE in ("Impedance Control", "Visual Servo"):
+                    if config.TEST_MODE == "effort":
                         self.apply_torques(self.arm_ctrl_joint_states)
-                    elif config.TEST_MODE == "IK":
+                    elif config.TEST_MODE == "position":
                         self.control_arm(self.arm_ctrl_joint_states)
                 mujoco.mj_step(self.model, self.data)
 
