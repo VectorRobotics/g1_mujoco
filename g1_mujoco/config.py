@@ -18,4 +18,4 @@ SIMULATE_DT = 1/200  # Physics timestep (small for stability) 0.005s
 VIEWER_DT = 1.0/25.0  # ~25 fps for viewer 0.04s
 
 # test mode: position or effort
-TEST_MODE = "effort"
+TEST_MODE = "position"

@@ -48,7 +48,6 @@
     <mesh name="left_wrist_roll_link" file="left_wrist_roll_link.STL" />
     <mesh name="left_wrist_pitch_link" file="left_wrist_pitch_link.STL" />
     <mesh name="left_wrist_yaw_link" file="left_wrist_yaw_link.STL" />
-    <mesh name="left_rubber_hand" file="left_rubber_hand.STL" />
     <mesh name="right_shoulder_pitch_link" file="right_shoulder_pitch_link.STL" />
     <mesh name="right_shoulder_roll_link" file="right_shoulder_roll_link.STL" />
     <mesh name="right_shoulder_yaw_link" file="right_shoulder_yaw_link.STL" />
@@ -56,7 +55,23 @@
     <mesh name="right_wrist_roll_link" file="right_wrist_roll_link.STL" />
     <mesh name="right_wrist_pitch_link" file="right_wrist_pitch_link.STL" />
     <mesh name="right_wrist_yaw_link" file="right_wrist_yaw_link.STL" />
-    <mesh name="right_rubber_hand" file="right_rubber_hand.STL" />
+    <mesh name="left_hand_palm_link" file="left_hand_palm_link.STL"/>
+    <mesh name="left_hand_thumb_0_link" file="left_hand_thumb_0_link.STL"/>
+    <mesh name="left_hand_thumb_1_link" file="left_hand_thumb_1_link.STL"/>
+    <mesh name="left_hand_thumb_2_link" file="left_hand_thumb_2_link.STL"/>
+    <mesh name="left_hand_middle_0_link" file="left_hand_middle_0_link.STL"/>
+    <mesh name="left_hand_middle_1_link" file="left_hand_middle_1_link.STL"/>
+    <mesh name="left_hand_index_0_link" file="left_hand_index_0_link.STL"/>
+    <mesh name="left_hand_index_1_link" file="left_hand_index_1_link.STL"/>
+    <mesh name="right_hand_palm_link" file="right_hand_palm_link.STL"/>
+    <mesh name="right_hand_thumb_0_link" file="right_hand_thumb_0_link.STL"/>
+    <mesh name="right_hand_thumb_1_link" file="right_hand_thumb_1_link.STL"/>
+    <mesh name="right_hand_thumb_2_link" file="right_hand_thumb_2_link.STL"/>
+    <mesh name="right_hand_middle_0_link" file="right_hand_middle_0_link.STL"/>
+    <mesh name="right_hand_middle_1_link" file="right_hand_middle_1_link.STL"/>
+    <mesh name="right_hand_index_0_link" file="right_hand_index_0_link.STL"/>
+    <mesh name="right_hand_index_1_link" file="right_hand_index_1_link.STL"/>
+    <material name="black" rgba="0.2 0.2 0.2 1"/>
   </asset>
 
   <worldbody>
@@ -194,8 +209,8 @@
       <body name="waist_yaw_link">
         <inertial pos="0.003964 0 0.018769" quat="-0.0178291 0.628464 0.0282471 0.777121"
           mass="0.244" diaginertia="0.000158561 0.000124229 9.67669e-05" />
-        <!-- <joint name="waist_yaw_joint" pos="0 0 0" axis="0 0 1" range="-2.618 2.618"
-          actuatorfrcrange="-88 88" class="torso_motor"/> -->
+        <joint name="waist_yaw_joint" pos="0 0 0" axis="0 0 1" range="-2.618 2.618"
+          actuatorfrcrange="-88 88" class="torso_motor"/>
         <geom type="mesh" contype="0" conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1"
           mesh="waist_yaw_link" />
         <body name="waist_roll_link" pos="-0.0039635 0 0.035">
@@ -291,39 +306,58 @@
                           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0"
                             rgba="0.7 0.7 0.7 1" mesh="left_wrist_yaw_link" />
                           <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="left_wrist_yaw_link" />
-                          <geom pos="0.0415 0.003 0" quat="1 0 0 0" type="mesh" contype="0"
-                            conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1"
-                            mesh="left_rubber_hand" />
                           <!-- Hand mass bodies from URDF (welded to wrist, no joints) -->
                           <body name="left_hand_palm_link" pos="0.0415 0.003 0">
-                            <inertial pos="0.06214634836 -0.00050869656 -0.00058171093" mass="0.37283854"
-                              fullinertia="0.00027535181027 0.00053951827219 0.00039623390907 -0.00001595519465 -0.00000242161890 -0.00000042279435"/>
+                            <inertial pos="0.0621463 -0.0005087 -0.0005817" mass="0.37283854" 
+                                      fullinertia="0.00027535 0.00053951 0.00039623 -1.595e-05 -2.42e-06 -4.22e-07"/>
+                            <geom type="mesh" mesh="left_hand_palm_link" material="black"/>
                             <body name="left_hand_thumb_0_link" pos="0.0255 0 0">
-                              <inertial pos="-0.00088424580 -0.00863407079 0.00094429336" mass="0.08623657"
-                                fullinertia="0.00001602919238 0.00001451795012 0.00001637877663 0.00000010683177 0.00000016728875 -0.00000051094752"/>
+                              <joint name="left_hand_thumb_0_joint" type="hinge" axis="0 1 0" range="-1.0472 1.0472" damping="0.05" frictionloss="0.1"/>
+                              <inertial pos="-0.0008842 -0.008634 0.000944" mass="0.08623657" 
+                                        fullinertia="1.602e-05 1.451e-05 1.637e-05 1.06e-07 1.67e-07 -5.10e-07"/>
+                              <geom type="mesh" mesh="left_hand_thumb_0_link" material="black"/>
+
                               <body name="left_hand_thumb_1_link" pos="-0.0025 -0.0193 0">
-                                <inertial pos="-0.00082788768 -0.03547435774 -0.00038089960" mass="0.05885070"
-                                  fullinertia="0.00001274699945 0.00000601573947 0.00001234543582 -0.00000050770784 0.00000016088850 -0.00000027839003"/>
+                                <joint name="left_hand_thumb_1_joint" type="hinge" axis="0 0 1" range="-0.6108 1.0472" damping="0.05" frictionloss="0.1"/>
+                                <inertial pos="-0.0008278 -0.03547 -0.000380" mass="0.0588507" 
+                                          fullinertia="1.274e-05 6.015e-06 1.234e-05 -5.07e-07 1.60e-07 -2.78e-07"/>
+                                <geom type="mesh" mesh="left_hand_thumb_1_link" material="black"/>
+                                <geom type="box" size="0.01 0.015 0.01" pos="-0.001 -0.032 0" name="thumb_1_collision"/>
+
                                 <body name="left_hand_thumb_2_link" pos="0 -0.0458 0">
-                                  <inertial pos="-0.00171735242 -0.02628192939 0.00010778879" mass="0.02030626"
-                                    fullinertia="0.00000461267817 0.00000153561368 0.00000386625776 -0.00000003422130 -0.00000000823881 -0.00000002549885"/>
+                                  <joint name="left_hand_thumb_2_joint" type="hinge" axis="0 0 1" range="0 1.7453" damping="0.05" frictionloss="0.1"/>
+                                  <inertial pos="-0.001717 -0.02628 0.000107" mass="0.02030626" 
+                                            fullinertia="4.612e-06 1.535e-06 3.866e-06 -3.42e-08 -8.23e-09 -2.54e-08"/>
+                                  <geom type="mesh" mesh="left_hand_thumb_2_link" material="black"/>
                                 </body>
                               </body>
                             </body>
+
                             <body name="left_hand_middle_0_link" pos="0.0777 0.0016 -0.0285">
-                              <inertial pos="0.03547435774 0.00082788768 0.00038089960" mass="0.05885070"
-                                fullinertia="0.00000601573947 0.00001274699945 0.00001234543582 -0.00000050770784 -0.00000027839003 0.00000016088850"/>
+                              <joint name="left_hand_middle_0_joint" type="hinge" axis="0 0 1" range="-1.5708 0" damping="0.05" frictionloss="0.1"/>
+                              <inertial pos="0.03547 0.000827 0.000380" mass="0.0588507" 
+                                        fullinertia="6.015e-06 1.274e-05 1.234e-05 -5.07e-07 -2.78e-07 1.60e-07"/>
+                              <geom type="mesh" mesh="left_hand_middle_0_link" material="black"/>
+
                               <body name="left_hand_middle_1_link" pos="0.0458 0 0">
-                                <inertial pos="0.02628192939 0.00171735242 -0.00010778879" mass="0.02030626"
-                                  fullinertia="0.00000153561368 0.00000461267817 0.00000386625776 -0.00000003422130 -0.00000002549885 -0.00000000823881"/>
+                                <joint name="left_hand_middle_1_joint" type="hinge" axis="0 0 1" range="-1.7453 0" damping="0.05" frictionloss="0.1"/>
+                                <inertial pos="0.02628 0.001717 -0.000107" mass="0.02030626" 
+                                          fullinertia="1.535e-06 4.612e-06 3.866e-06 -3.42e-08 -2.54e-08 -8.23e-09"/>
+                                <geom type="mesh" mesh="left_hand_middle_1_link" material="black"/>
                               </body>
                             </body>
+
                             <body name="left_hand_index_0_link" pos="0.0777 0.0016 0.0285">
-                              <inertial pos="0.03547435774 0.00082788768 0.00038089960" mass="0.05885070"
-                                fullinertia="0.00000601573947 0.00001274699945 0.00001234543582 -0.00000050770784 -0.00000027839003 0.00000016088850"/>
+                              <joint name="left_hand_index_0_joint" type="hinge" axis="0 0 1" range="-1.5708 0" damping="0.05" frictionloss="0.1"/>
+                              <inertial pos="0.03547 0.000827 0.000380" mass="0.0588507" 
+                                        fullinertia="6.015e-06 1.274e-05 1.234e-05 -5.07e-07 -2.78e-07 1.60e-07"/>
+                              <geom type="mesh" mesh="left_hand_index_0_link" material="black"/>
+
                               <body name="left_hand_index_1_link" pos="0.0458 0 0">
-                                <inertial pos="0.02628192939 0.00171735242 -0.00010778879" mass="0.02030626"
-                                  fullinertia="0.00000153561368 0.00000461267817 0.00000386625776 -0.00000003422130 -0.00000002549885 -0.00000000823881"/>
+                                <joint name="left_hand_index_1_joint" type="hinge" axis="0 0 1" range="-1.7453 0" damping="0.05" frictionloss="0.1"/>
+                                <inertial pos="0.02628 0.001717 -0.000107" mass="0.02030626" 
+                                          fullinertia="1.535e-06 4.612e-06 3.866e-06 -3.42e-08 -2.54e-08 -8.23e-09"/>
+                                <geom type="mesh" mesh="left_hand_index_1_link" material="black"/>
                               </body>
                             </body>
                           </body>
@@ -399,39 +433,59 @@
                           <geom type="mesh" contype="0" conaffinity="0" group="1" density="0"
                             rgba="0.7 0.7 0.7 1" mesh="right_wrist_yaw_link" />
                           <geom type="mesh" rgba="0.7 0.7 0.7 1" mesh="right_wrist_yaw_link" />
-                          <geom pos="0.0415 -0.003 0" quat="1 0 0 0" type="mesh" contype="0"
-                            conaffinity="0" group="1" density="0" rgba="0.7 0.7 0.7 1"
-                            mesh="right_rubber_hand" />
                           <!-- Hand mass bodies from URDF (welded to wrist, no joints) -->
                           <body name="right_hand_palm_link" pos="0.0415 -0.003 0">
-                            <inertial pos="0.06214634836 0.00050869656 -0.00058171093" mass="0.37283854"
-                              fullinertia="0.00027535181027 0.00053951827219 0.00039623390907 0.00001595519465 -0.00000242161890 0.00000042279435"/>
+                            <inertial pos="0.0621463 0.0005087 -0.0005817" mass="0.37283854" 
+                                      fullinertia="0.00027535 0.00053951 0.00039623 1.595e-05 -2.42e-06 4.22e-07"/>
+                            <geom type="mesh" mesh="right_hand_palm_link" material="black"/>
+
                             <body name="right_hand_thumb_0_link" pos="0.0255 0 0">
-                              <inertial pos="-0.00088424580 0.00863407079 0.00094429336" mass="0.08623657"
-                                fullinertia="0.00001602919238 0.00001451795012 0.00001637877663 -0.00000010683177 0.00000016728875 0.00000051094752"/>
+                              <joint name="right_hand_thumb_0_joint" type="hinge" axis="0 1 0" range="-1.0472 1.0472" damping="0.05" frictionloss="0.1"/>
+                              <inertial pos="-0.0008842 0.008634 0.000944" mass="0.08623657" 
+                                        fullinertia="1.602e-05 1.451e-05 1.637e-05 -1.06e-07 1.67e-07 5.10e-07"/>
+                              <geom type="mesh" mesh="right_hand_thumb_0_link" material="black"/>
+
                               <body name="right_hand_thumb_1_link" pos="-0.0025 0.0193 0">
-                                <inertial pos="-0.00082788768 0.03547435774 -0.00038089960" mass="0.05885070"
-                                  fullinertia="0.00001274699945 0.00000601573947 0.00001234543582 0.00000050770784 0.00000016088850 0.00000027839003"/>
+                                <joint name="right_hand_thumb_1_joint" type="hinge" axis="0 0 1" range="-1.0472 0.6108" damping="0.05" frictionloss="0.1"/>
+                                <inertial pos="-0.0008278 0.03547 -0.000380" mass="0.0588507" 
+                                          fullinertia="1.274e-05 6.015e-06 1.234e-05 5.07e-07 1.60e-07 2.78e-07"/>
+                                <geom type="mesh" mesh="right_hand_thumb_1_link" material="black"/>
+                                <geom type="box" size="0.01 0.015 0.01" pos="-0.001 0.032 0" name="right_thumb_1_collision"/>
+
                                 <body name="right_hand_thumb_2_link" pos="0 0.0458 0">
-                                  <inertial pos="-0.00171735242 0.02628192939 0.00010778879" mass="0.02030626"
-                                    fullinertia="0.00000461267817 0.00000153561368 0.00000386625776 0.00000003422130 -0.00000000823881 0.00000002549885"/>
+                                  <joint name="right_hand_thumb_2_joint" type="hinge" axis="0 0 1" range="-1.7453 0" damping="0.05" frictionloss="0.1"/>
+                                  <inertial pos="-0.001717 0.02628 0.000107" mass="0.02030626" 
+                                            fullinertia="4.612e-06 1.535e-06 3.866e-06 3.42e-08 -8.23e-09 2.54e-08"/>
+                                  <geom type="mesh" mesh="right_hand_thumb_2_link" material="black"/>
                                 </body>
                               </body>
                             </body>
+
                             <body name="right_hand_middle_0_link" pos="0.0777 -0.0016 -0.0285">
-                              <inertial pos="0.03547435774 -0.00082788768 0.00038089960" mass="0.05885070"
-                                fullinertia="0.00000601573947 0.00001274699945 0.00001234543582 0.00000050770784 -0.00000027839003 -0.00000016088850"/>
+                              <joint name="right_hand_middle_0_joint" type="hinge" axis="0 0 1" range="0 1.5708" damping="0.05" frictionloss="0.1"/>
+                              <inertial pos="0.03547 -0.000827 0.000380" mass="0.0588507" 
+                                        fullinertia="6.015e-06 1.274e-05 1.234e-05 5.07e-07 -2.78e-07 -1.60e-07"/>
+                              <geom type="mesh" mesh="right_hand_middle_0_link" material="black"/>
+
                               <body name="right_hand_middle_1_link" pos="0.0458 0 0">
-                                <inertial pos="0.02628192939 -0.00171735242 -0.00010778879" mass="0.02030626"
-                                  fullinertia="0.00000153561368 0.00000461267817 0.00000386625776 0.00000003422130 -0.00000002549885 0.00000000823881"/>
+                                <joint name="right_hand_middle_1_joint" type="hinge" axis="0 0 1" range="0 1.7453" damping="0.05" frictionloss="0.1"/>
+                                <inertial pos="0.02628 -0.001717 -0.000107" mass="0.02030626" 
+                                          fullinertia="1.535e-06 4.612e-06 3.866e-06 3.42e-08 -2.54e-08 8.23e-09"/>
+                                <geom type="mesh" mesh="right_hand_middle_1_link" material="black"/>
                               </body>
                             </body>
+
                             <body name="right_hand_index_0_link" pos="0.0777 -0.0016 0.0285">
-                              <inertial pos="0.03547435774 -0.00082788768 0.00038089960" mass="0.05885070"
-                                fullinertia="0.00000601573947 0.00001274699945 0.00001234543582 0.00000050770784 -0.00000027839003 -0.00000016088850"/>
+                              <joint name="right_hand_index_0_joint" type="hinge" axis="0 0 1" range="0 1.5708" damping="0.05" frictionloss="0.1"/>
+                              <inertial pos="0.03547 -0.000827 0.000380" mass="0.0588507" 
+                                        fullinertia="6.015e-06 1.274e-05 1.234e-05 5.07e-07 -2.78e-07 -1.60e-07"/>
+                              <geom type="mesh" mesh="right_hand_index_0_link" material="black"/>
+
                               <body name="right_hand_index_1_link" pos="0.0458 0 0">
-                                <inertial pos="0.02628192939 -0.00171735242 -0.00010778879" mass="0.02030626"
-                                  fullinertia="0.00000153561368 0.00000461267817 0.00000386625776 0.00000003422130 -0.00000002549885 0.00000000823881"/>
+                                <joint name="right_hand_index_1_joint" type="hinge" axis="0 0 1" range="0 1.7453" damping="0.05" frictionloss="0.1"/>
+                                <inertial pos="0.02628 -0.001717 -0.000107" mass="0.02030626" 
+                                          fullinertia="1.535e-06 4.612e-06 3.866e-06 3.42e-08 -2.54e-08 8.23e-09"/>
+                                <geom type="mesh" mesh="right_hand_index_1_link" material="black"/>
                               </body>
                             </body>
                           </body>
@@ -463,8 +517,8 @@
     <motor name="right_ankle_pitch" joint="right_ankle_pitch_joint" ctrlrange="-50 50" />
     <motor name="right_ankle_roll" joint="right_ankle_roll_joint" ctrlrange="-50 50" />
 
-    <!-- <motor name="waist_yaw" joint="waist_yaw_joint" ctrlrange="-88 88" />
-    <motor name="waist_roll" joint="waist_roll_joint" ctrlrange="-50 50" />
+    <motor name="waist_yaw" joint="waist_yaw_joint" ctrlrange="-88 88" />
+    <!-- <motor name="waist_roll" joint="waist_roll_joint" ctrlrange="-50 50" />
     <motor name="waist_pitch" joint="waist_pitch_joint" ctrlrange="-50 50" /> -->
 
     <motor name="left_shoulder_pitch" joint="left_shoulder_pitch_joint" ctrlrange="-25 25" />
@@ -482,6 +536,22 @@
     <motor name="right_wrist_roll" joint="right_wrist_roll_joint" ctrlrange="-25 25" />
     <motor name="right_wrist_pitch" joint="right_wrist_pitch_joint" ctrlrange="-5 5" />
     <motor name="right_wrist_yaw" joint="right_wrist_yaw_joint" ctrlrange="-5 5" />
+
+    <motor name="left_hand_thumb_0" joint="left_hand_thumb_0_joint" ctrlrange="-1.0472 1.0472" />
+    <motor name="left_hand_thumb_1" joint="left_hand_thumb_1_joint" ctrlrange="-0.6108 1.0472" />
+    <motor name="left_hand_thumb_2" joint="left_hand_thumb_2_joint" ctrlrange="0 1.7453" />
+    <motor name="left_hand_middle_0" joint="left_hand_middle_0_joint" ctrlrange="-1.5708 0" />
+    <motor name="left_hand_middle_1" joint="left_hand_middle_1_joint" ctrlrange="-1.7453 0" />
+    <motor name="left_hand_index_0" joint="left_hand_index_0_joint" ctrlrange="-1.5708 0" />
+    <motor name="left_hand_index_1" joint="left_hand_index_1_joint" ctrlrange="-1.7453 0" />
+
+    <motor name="right_hand_thumb_0" joint="right_hand_thumb_0_joint" ctrlrange="-1.0472 1.0472" />
+    <motor name="right_hand_thumb_1" joint="right_hand_thumb_1_joint" ctrlrange="-1.0472 0.6108" />
+    <motor name="right_hand_thumb_2" joint="right_hand_thumb_2_joint" ctrlrange="-1.7453 0" />
+    <motor name="right_hand_middle_0" joint="right_hand_middle_0_joint" ctrlrange="0 1.5708" />
+    <motor name="right_hand_middle_1" joint="right_hand_middle_1_joint" ctrlrange="0 1.7453" />
+    <motor name="right_hand_index_0" joint="right_hand_index_0_joint" ctrlrange="0 1.5708" />
+    <motor name="right_hand_index_1" joint="right_hand_index_1_joint" ctrlrange="0 1.7453" />
   </actuator>
 
   <sensor>
@@ -497,8 +567,8 @@
     <jointpos name="right_knee_pos" joint="right_knee_joint" />
     <jointpos name="right_ankle_pitch_pos" joint="right_ankle_pitch_joint" />
     <jointpos name="right_ankle_roll_pos" joint="right_ankle_roll_joint" />
-    <!-- <jointpos name="waist_yaw_pos" joint="waist_yaw_joint" />
-    <jointpos name="waist_roll_pos" joint="waist_roll_joint" />
+    <jointpos name="waist_yaw_pos" joint="waist_yaw_joint" />
+    <!-- <jointpos name="waist_roll_pos" joint="waist_roll_joint" />
     <jointpos name="waist_pitch_pos" joint="waist_pitch_joint" /> -->
     <jointpos name="left_shoulder_pitch_pos" joint="left_shoulder_pitch_joint" />
     <jointpos name="left_shoulder_roll_pos" joint="left_shoulder_roll_joint" />
@@ -514,6 +584,20 @@
     <jointpos name="right_wrist_roll_pos" joint="right_wrist_roll_joint" />
     <jointpos name="right_wrist_pitch_pos" joint="right_wrist_pitch_joint" />
     <jointpos name="right_wrist_yaw_pos" joint="right_wrist_yaw_joint" />
+    <jointpos name="left_hand_thumb_0_pos" joint="left_hand_thumb_0_joint"/>
+    <jointpos name="left_hand_thumb_1_pos" joint="left_hand_thumb_1_joint"/>
+    <jointpos name="left_hand_thumb_2_pos" joint="left_hand_thumb_2_joint"/>
+    <jointpos name="left_hand_middle_0_pos" joint="left_hand_middle_0_joint"/>
+    <jointpos name="left_hand_middle_1_pos" joint="left_hand_middle_1_joint"/>
+    <jointpos name="left_hand_index_0_pos" joint="left_hand_index_0_joint"/>
+    <jointpos name="left_hand_index_1_pos" joint="left_hand_index_1_joint"/>
+    <jointpos name="right_hand_thumb_0_pos" joint="right_hand_thumb_0_joint"/>
+    <jointpos name="right_hand_thumb_1_pos" joint="right_hand_thumb_1_joint"/>
+    <jointpos name="right_hand_thumb_2_pos" joint="right_hand_thumb_2_joint"/>
+    <jointpos name="right_hand_middle_0_pos" joint="right_hand_middle_0_joint"/>
+    <jointpos name="right_hand_middle_1_pos" joint="right_hand_middle_1_joint"/>
+    <jointpos name="right_hand_index_0_pos" joint="right_hand_index_0_joint"/>
+    <jointpos name="right_hand_index_1_pos" joint="right_hand_index_1_joint"/>
 
     <jointvel name="left_hip_pitch_vel" joint="left_hip_pitch_joint" />
     <jointvel name="left_hip_roll_vel" joint="left_hip_roll_joint" />
@@ -527,8 +611,8 @@
     <jointvel name="right_knee_vel" joint="right_knee_joint" />
     <jointvel name="right_ankle_pitch_vel" joint="right_ankle_pitch_joint" />
     <jointvel name="right_ankle_roll_vel" joint="right_ankle_roll_joint" />
-    <!-- <jointvel name="waist_yaw_vel" joint="waist_yaw_joint" />
-    <jointvel name="waist_roll_vel" joint="waist_roll_joint" />
+    <jointvel name="waist_yaw_vel" joint="waist_yaw_joint" />
+    <!-- <jointvel name="waist_roll_vel" joint="waist_roll_joint" />
     <jointvel name="waist_pitch_vel" joint="waist_pitch_joint" /> -->
     <jointvel name="left_shoulder_pitch_vel" joint="left_shoulder_pitch_joint" />
     <jointvel name="left_shoulder_roll_vel" joint="left_shoulder_roll_joint" />
@@ -544,6 +628,21 @@
     <jointvel name="right_wrist_roll_vel" joint="right_wrist_roll_joint" />
     <jointvel name="right_wrist_pitch_vel" joint="right_wrist_pitch_joint" />
     <jointvel name="right_wrist_yaw_vel" joint="right_wrist_yaw_joint" />
+    <jointvel name="left_hand_thumb_0_vel" joint="left_hand_thumb_0_joint"/>
+    <jointvel name="left_hand_thumb_1_vel" joint="left_hand_thumb_1_joint"/>
+    <jointvel name="left_hand_thumb_2_vel" joint="left_hand_thumb_2_joint"/>
+    <jointvel name="left_hand_middle_0_vel" joint="left_hand_middle_0_joint"/>
+    <jointvel name="left_hand_middle_1_vel" joint="left_hand_middle_1_joint"/>
+    <jointvel name="left_hand_index_0_vel" joint="left_hand_index_0_joint"/>
+    <jointvel name="left_hand_index_1_vel" joint="left_hand_index_1_joint"/>
+    <jointvel name="right_hand_thumb_0_vel" joint="right_hand_thumb_0_joint"/>
+    <jointvel name="right_hand_thumb_1_vel" joint="right_hand_thumb_1_joint"/>
+    <jointvel name="right_hand_thumb_2_vel" joint="right_hand_thumb_2_joint"/>
+    <jointvel name="right_hand_middle_0_vel" joint="right_hand_middle_0_joint"/>
+    <jointvel name="right_hand_middle_1_vel" joint="right_hand_middle_1_joint"/>
+    <jointvel name="right_hand_index_0_vel" joint="right_hand_index_0_joint"/>
+    <jointvel name="right_hand_index_1_vel" joint="right_hand_index_1_joint"/>
+  
 
     <jointactuatorfrc name="left_hip_pitch_torque" joint="left_hip_pitch_joint" />
     <jointactuatorfrc name="left_hip_roll_torque" joint="left_hip_roll_joint" />
@@ -557,8 +656,8 @@
     <jointactuatorfrc name="right_knee_torque" joint="right_knee_joint" />
     <jointactuatorfrc name="right_ankle_pitch_torque" joint="right_ankle_pitch_joint" />
     <jointactuatorfrc name="right_ankle_roll_torque" joint="right_ankle_roll_joint" />
-    <!-- <jointactuatorfrc name="waist_yaw_torque" joint="waist_yaw_joint" />
-    <jointactuatorfrc name="waist_roll_torque" joint="waist_roll_joint" />
+    <jointactuatorfrc name="waist_yaw_torque" joint="waist_yaw_joint" />
+    <!-- <jointactuatorfrc name="waist_roll_torque" joint="waist_roll_joint" />
     <jointactuatorfrc name="waist_pitch_torque" joint="waist_pitch_joint" /> -->
     <jointactuatorfrc name="left_shoulder_pitch_torque" joint="left_shoulder_pitch_joint" />
     <jointactuatorfrc name="left_shoulder_roll_torque" joint="left_shoulder_roll_joint" />
@@ -574,6 +673,20 @@
     <jointactuatorfrc name="right_wrist_roll_torque" joint="right_wrist_roll_joint" />
     <jointactuatorfrc name="right_wrist_pitch_torque" joint="right_wrist_pitch_joint" />
     <jointactuatorfrc name="right_wrist_yaw_torque" joint="right_wrist_yaw_joint" />
+    <jointactuatorfrc name="left_hand_thumb_0_torque" joint="left_hand_thumb_0_joint"/>
+    <jointactuatorfrc name="left_hand_thumb_1_torque" joint="left_hand_thumb_1_joint"/>
+    <jointactuatorfrc name="left_hand_thumb_2_torque" joint="left_hand_thumb_2_joint"/>
+    <jointactuatorfrc name="left_hand_middle_0_torque" joint="left_hand_middle_0_joint"/>
+    <jointactuatorfrc name="left_hand_middle_1_torque" joint="left_hand_middle_1_joint"/>
+    <jointactuatorfrc name="left_hand_index_0_torque" joint="left_hand_index_0_joint"/>
+    <jointactuatorfrc name="left_hand_index_1_torque" joint="left_hand_index_1_joint"/>
+    <jointactuatorfrc name="right_hand_thumb_0_torque" joint="right_hand_thumb_0_joint"/>
+    <jointactuatorfrc name="right_hand_thumb_1_torque" joint="right_hand_thumb_1_joint"/>
+    <jointactuatorfrc name="right_hand_thumb_2_torque" joint="right_hand_thumb_2_joint"/>
+    <jointactuatorfrc name="right_hand_middle_0_torque" joint="right_hand_middle_0_joint"/>
+    <jointactuatorfrc name="right_hand_middle_1_torque" joint="right_hand_middle_1_joint"/>
+    <jointactuatorfrc name="right_hand_index_0_torque" joint="right_hand_index_0_joint"/>
+    <jointactuatorfrc name="right_hand_index_1_torque" joint="right_hand_index_1_joint"/>
 
     <framequat name="imu_quat" objtype="site" objname="imu" />
     <gyro name="imu_gyro" site="imu" />

@@ -29,9 +29,16 @@ class MujocoSimNode(Node):
 
         self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
 
+        self.viewer.cam.lookat = [-0.016, -0.015, 0.68]
+        self.viewer.cam.distance = 1.74
+        self.viewer.cam.azimuth = 144.18
+        self.viewer.cam.elevation = -21.56
+
         # PD control parameters
         self.arm_kp = 10
         self.arm_kd = 2
+        self.arm_ki = 0.01
+        self.error_int = 0
 
         self.arm_ctrl_joint_states = None
         self.wb_fdbk_joint_states = JointState()
@@ -96,19 +103,23 @@ class MujocoSimNode(Node):
     def apply_torques(self, msg: JointState):
         """Impedance Control mode: directly apply torques from the controller."""
         for i, joint_name in enumerate(msg.name):
-            jnt_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
-            if jnt_id >= 0:
-                self.data.ctrl[jnt_id] = msg.effort[i]
+            act_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, joint_name[:-6])
+            if act_id >= 0:
+                self.data.ctrl[act_id] = msg.effort[i]
 
     def control_arm(self, msg: JointState):
         """IK mode: effort feedforward + PD position/velocity tracking."""
         for i, joint_name in enumerate(msg.name):
             jnt_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
-            if jnt_id >= 0:
-                self.data.ctrl[jnt_id] = (
+            act_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, joint_name[:-6])
+
+            if jnt_id >= 0 and act_id >=0:
+                self.error_int += (msg.position[i] - self.data.qpos[jnt_id])
+                self.data.ctrl[act_id] = (
                     msg.effort[i]
                     + self.arm_kp * (msg.position[i] - self.data.qpos[jnt_id])
                     + self.arm_kd * (msg.velocity[i] - self.data.qvel[jnt_id])
+                    + self.arm_ki * self.error_int
                 )
 
     def PrintSceneInformation(self):
