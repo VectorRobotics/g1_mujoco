@@ -34,11 +34,38 @@ class MujocoSimNode(Node):
         self.viewer.cam.azimuth = 144.18
         self.viewer.cam.elevation = -21.56
 
-        # PD control parameters
-        self.arm_kp = 10
-        self.arm_kd = 2
-        self.arm_ki = 0.01
-        self.error_int = 0
+        # Per-joint PID gains: waist (3) + left arm (7) + right arm (7)
+        _joint_names = [
+            # Waist
+            "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+            # Left arm
+            "left_shoulder_pitch_joint", "left_shoulder_roll_joint",
+            "left_shoulder_yaw_joint", "left_elbow_joint",
+            "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint",
+            # Right arm
+            "right_shoulder_pitch_joint", "right_shoulder_roll_joint",
+            "right_shoulder_yaw_joint", "right_elbow_joint",
+            "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint",
+        ]
+        _kp_vals = [
+            10.0, 150.0, 150.0,
+            14.2, 14.2, 14.2, 14.2, 14.2, 16.7, 16.7,
+            14.2, 14.2, 14.2, 14.2, 14.2, 16.7, 16.7,
+        ]
+        _kd_vals = [
+            2.0, 3.5, 2.0,
+            2.5, 2.5, 2.5, 3.5, 1.5, 1.5, 1.06,
+            2.5, 2.5, 2.5, 3.5, 1.5, 1.5, 1.06,
+        ]
+        _ki_vals = [
+            0.0, 0.0, 0.0,
+            0.03, 0.056, 0.056, 0.056, 0.056, 0.056, 0.056,
+            0.03, 0.056, 0.056, 0.056, 0.056, 0.056, 0.056,
+        ]
+        self.joint_kp = dict(zip(_joint_names, _kp_vals))
+        self.joint_kd = dict(zip(_joint_names, _kd_vals))
+        self.joint_ki = dict(zip(_joint_names, _ki_vals))
+        self.integral_error = {name: 0.0 for name in _joint_names}
 
         self.arm_ctrl_joint_states = None
         self.wb_fdbk_joint_states = JointState()
@@ -54,6 +81,8 @@ class MujocoSimNode(Node):
 
         self.get_logger().info("Mujoco simulation node has started.")
         self.PrintSceneInformation()
+
+        print("Simulation running...")
 
     def listener_callback(self, msg: JointState):
         self.arm_ctrl_joint_states = msg
@@ -108,19 +137,39 @@ class MujocoSimNode(Node):
                 self.data.ctrl[act_id] = msg.effort[i]
 
     def control_arm(self, msg: JointState):
-        """IK mode: effort feedforward + PD position/velocity tracking."""
+        """PID position/velocity tracking with per-joint gains."""
+        dt = config.SIMULATE_DT
         for i, joint_name in enumerate(msg.name):
             jnt_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
             act_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, joint_name[:-6])
 
-            if jnt_id >= 0 and act_id >=0:
-                self.error_int += (msg.position[i] - self.data.qpos[jnt_id])
-                self.data.ctrl[act_id] = (
-                    msg.effort[i]
-                    + self.arm_kp * (msg.position[i] - self.data.qpos[jnt_id])
-                    + self.arm_kd * (msg.velocity[i] - self.data.qvel[jnt_id])
-                    + self.arm_ki * self.error_int
-                )
+            if jnt_id < 0 or act_id < 0:
+                continue
+
+            kp = self.joint_kp.get(joint_name, 10.0)
+            kd = self.joint_kd.get(joint_name, 2.0)
+            ki = self.joint_ki.get(joint_name, 0.0)
+
+            error = msg.position[i] - self.data.qpos[jnt_id]
+
+            # Accumulate integral only within deadband
+            if abs(error) >= 0.001 and abs(error) < 0.4:
+                self.integral_error[joint_name] = self.integral_error.get(joint_name, 0.0) + error
+
+            # Clamp integral error
+            self.integral_error[joint_name] = max(-1000.0, min(1000.0, self.integral_error[joint_name]))
+
+            # Add integral term scaled by timestep, clamp to 50% of max motor torque
+            adj = max(-60.0, min(60.0, msg.effort[i] + ki * self.integral_error[joint_name] * dt))
+
+            # PD + feedforward
+            effort = (
+                adj
+                + kp * error
+                + kd * (msg.velocity[i] - self.data.qvel[jnt_id])
+            )
+
+            self.data.ctrl[act_id] = effort
 
     def PrintSceneInformation(self):
         print(" ")
