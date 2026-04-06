@@ -49,23 +49,28 @@ class MujocoSimNode(Node):
         ]
         _kp_vals = [
             10.0, 150.0, 150.0,
-            14.2, 14.2, 14.2, 14.2, 14.2, 16.7, 16.7,
-            14.2, 14.2, 14.2, 14.2, 14.2, 16.7, 16.7,
+            18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0,
+            18.0, 18.0, 18.0, 18.0, 18.0, 18.0, 18.0,
         ]
         _kd_vals = [
             2.0, 3.5, 2.0,
-            2.5, 2.5, 2.5, 3.5, 1.5, 1.5, 1.06,
-            2.5, 2.5, 2.5, 3.5, 1.5, 1.5, 1.06,
+            2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0,
+            2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0,
         ]
         _ki_vals = [
             0.0, 0.0, 0.0,
-            0.03, 0.056, 0.056, 0.056, 0.056, 0.056, 0.056,
-            0.03, 0.056, 0.056, 0.056, 0.056, 0.056, 0.056,
+            0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15,
+            0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15,
         ]
         self.joint_kp = dict(zip(_joint_names, _kp_vals))
         self.joint_kd = dict(zip(_joint_names, _kd_vals))
         self.joint_ki = dict(zip(_joint_names, _ki_vals))
-        self.integral_error = {name: 0.0 for name in _joint_names}
+
+        # PID state for Tustin discretization
+        self.prev_error = {name: 0.0 for name in _joint_names}
+        self.integral = {name: 0.0 for name in _joint_names}
+        self.d_term = {name: 0.0 for name in _joint_names}
+        self.Tf = 0.1  # D-term filter time constant (s)
 
         self.arm_ctrl_joint_states = None
         self.wb_fdbk_joint_states = JointState()
@@ -137,8 +142,16 @@ class MujocoSimNode(Node):
                 self.data.ctrl[act_id] = msg.effort[i]
 
     def control_arm(self, msg: JointState):
-        """PID position/velocity tracking with per-joint gains."""
-        dt = config.SIMULATE_DT
+        """PID with Tustin (bilinear) discretization and filtered D term.
+
+        Transfer function:
+                        Ts*(z+1)                    1
+          u = Kp*e + Ki*--------*e + Kd * ----------------------- * e
+                        2*(z-1)           Tf + Ts/2*(z+1)/(z-1)
+        """
+        Ts = config.SIMULATE_DT
+        Tf = self.Tf
+
         for i, joint_name in enumerate(msg.name):
             jnt_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, joint_name)
             act_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, joint_name[:-6])
@@ -151,24 +164,26 @@ class MujocoSimNode(Node):
             ki = self.joint_ki.get(joint_name, 0.0)
 
             error = msg.position[i] - self.data.qpos[jnt_id]
+            prev_e = self.prev_error[joint_name]
 
-            # Accumulate integral only within deadband
-            if abs(error) >= 0.001 and abs(error) < 0.4:
-                self.integral_error[joint_name] = self.integral_error.get(joint_name, 0.0) + error
+            # I term: trapezoidal integration
+            self.integral[joint_name] += ki * Ts / 2.0 * (error + prev_e)
+            self.integral[joint_name] = max(-60.0, min(60.0, self.integral[joint_name]))
 
-            # Clamp integral error
-            self.integral_error[joint_name] = max(-1000.0, min(1000.0, self.integral_error[joint_name]))
+            # D term: filtered derivative (Tustin)
+            self.d_term[joint_name] = (
+                kd * (error - prev_e) + (Tf - Ts / 2.0) * self.d_term[joint_name]
+            ) / (Tf + Ts / 2.0)
 
-            # Add integral term scaled by timestep, clamp to 50% of max motor torque
-            adj = max(-60.0, min(60.0, msg.effort[i] + ki * self.integral_error[joint_name] * dt))
-
-            # PD + feedforward
+            # PID output + feedforward
             effort = (
-                adj
+                msg.effort[i]
                 + kp * error
-                + kd * (msg.velocity[i] - self.data.qvel[jnt_id])
+                + self.integral[joint_name]
+                + self.d_term[joint_name]
             )
 
+            self.prev_error[joint_name] = error
             self.data.ctrl[act_id] = effort
 
     def PrintSceneInformation(self):
