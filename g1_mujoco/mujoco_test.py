@@ -90,6 +90,11 @@ class MujocoSimNode(Node):
         print("Simulation running...")
 
     def listener_callback(self, msg: JointState):
+        for n in msg.name:
+            if n in self.prev_error:
+                self.prev_error[n] = 0.0
+                self.integral[n] = 0.0
+                self.d_term[n] = 0.0
         self.arm_ctrl_joint_states = msg
 
     def _sim_loop(self):
