@@ -1,0 +1,12 @@
+[project]
+name = "g1-mujoco"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+dependencies = [
+    "unitree-sdk2py",
+]
+dynamic = ["scripts", "license", "maintainers"]
+
+[tool.uv.sources]
+unitree-sdk2py = { path = "../unitree_sdk2_python", editable = true }

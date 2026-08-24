@@ -21,13 +21,11 @@ setup(
      ('share/' + package_name, ['package.xml']),
      (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
    ] + asset_data_files,
- install_requires=['setuptools'],
  zip_safe=True,
  maintainer='Jinyao Zhou',
  maintainer_email='kaleidojean@gmail.com',
  description='Package for G1 mujoco simulation',
  license='TODO: License declaration',
- tests_require=['pytest'],
  entry_points={
      'console_scripts': [
              'run_sim = g1_mujoco.mujoco_test:main'
